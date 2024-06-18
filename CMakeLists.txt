@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.11)
 
 include(FetchContent)
 
+# a cool little cmake script that will force the sources into visual studio groups.
+include (cmake/vs_source_groups.cmake)
+
 project(Engine)
 
 function(AddDep targetName depName pkgName libName headerOnly gitUrl gitTag)

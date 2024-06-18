@@ -1,0 +1,15 @@
+{
+  "version": 0,
+  "dependencies": [
+    "gh:g-truc/glm@^1.0.1",
+    "gh:gabime/spdlog@^1.14.0",
+    "gh:nothings/stb",
+    "gh:nlohmann/json@^3.11.0",
+    "gh:kcat/openal-soft#1.23.1",
+    "gl:freetype/freetype@2.13.2",
+    "gh:Chlumsky/msdf-atlas-gen@1.3"
+  ],
+  "!web": [
+    "gh:glfw/glfw"
+  ]
+}
