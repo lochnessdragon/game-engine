@@ -1,7 +1,8 @@
 #include "audio/source.h"
 
+#include <core/log.h>
+
 #include "audio/audio.h"
-#include "log.h"
 
 Source::Source() {
 	alGenSources(1, &handle);

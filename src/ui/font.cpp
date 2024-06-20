@@ -1,5 +1,5 @@
 #include <ui/font.h>
-#include "log.h"
+#include <core/log.h>
 
 #include <stdexcept>
 

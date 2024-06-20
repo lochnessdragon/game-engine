@@ -63,7 +63,7 @@ if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Emscripten")
 	add_subdirectory(lib/glad/)
 endif()
 
-file(GLOB_RECURSE SOURCES "src/*.cpp" "include/*.h")
+file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
 
 add_library(Engine STATIC ${SOURCES})
 # add dependencies
@@ -134,7 +134,13 @@ endif()
 target_include_directories(Engine PRIVATE "lib/par_shapes")
 
 # setup includes
-target_include_directories(Engine PUBLIC "include/")
+target_include_directories(Engine PUBLIC "src/")
+
+# custom post-build event to copy the builtin assets to the runtime directory
+add_custom_command(TARGET Engine
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${Engine_SOURCE_DIR}/assets/builtin ${CMAKE_SOURCE_DIR}/assets/builtin
+)
 
 # Extra linux compiler options
 if( CMAKE_COMPILER_IS_GNUCC )

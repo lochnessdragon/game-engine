@@ -1,9 +1,9 @@
-#include "audio/buffer.h"
+#include "buffer.h"
 
-#include "audio/audio.h"
-#include "log.h"
+#include <core/log.h>
 
-#include "audio/AudioFile.h"
+#include "audio.h"
+#include "AudioFile.h"
 
 Buffer::Buffer(const std::string& filename) {
 	alGenBuffers(1, &handle);
