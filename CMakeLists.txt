@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.11)
 include(FetchContent)
 
 # a cool little cmake script that will force the sources into visual studio groups.
-include (cmake/vs_source_groups.cmake)
+include (Scripts/CMake/vs_source_groups.cmake)
 
 project(Engine)
 
@@ -44,7 +44,7 @@ function(AddDep targetName depName pkgName libName headerOnly gitUrl gitTag)
       else()
         # add the file as a subdirectory
 		if( NOT headerOnly )
-		  add_subdirectory(${${depName}_DIR} lib/${depName})
+		  add_subdirectory(${${depName}_DIR} "External Libraries/${depName}")
 		  target_link_libraries(${targetName} PUBLIC ${libName})
           message(STATUS "Added ${depName} as a subdirectory and linked ${libName}")
 		else()
@@ -60,10 +60,10 @@ function(AddDep targetName depName pkgName libName headerOnly gitUrl gitTag)
 endfunction()
 
 if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Emscripten")
-	add_subdirectory(lib/glad/)
+	add_subdirectory("External Libraries/glad/")
 endif()
 
-file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
+file(GLOB_RECURSE SOURCES "Source/*.cpp" "Source/*.h")
 
 add_library(Engine STATIC ${SOURCES})
 # add dependencies
@@ -83,7 +83,7 @@ AddDep(Engine NLOHMANN_JSON nlohmann_json nlohmann_json::nlohmann_json 0 https:/
 AddDep(Engine OPENAL_SOFT OpenAL OpenAL 0 https://github.com/kcat/openal-soft.git master)
 
 # ImGUI
-include(cmake/imgui.cmake)
+include(Scripts/CMake/imgui.cmake)
 target_link_libraries(Engine PUBLIC imgui)
 
 # disable non-requisite free type libraries:
@@ -127,14 +127,14 @@ AddDep(Engine MSDF_ATLAS_GEN msdf-atlas-gen msdf-atlas-gen 0 https://github.com/
 # link glad (but not for the web)
 if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Emscripten")
 	target_link_libraries(Engine PRIVATE Glad)
-	target_include_directories(Engine PUBLIC "lib/glad/include")
+	target_include_directories(Engine PUBLIC "External Libraries/glad/include")
 endif()
 
 # include par_shapes
-target_include_directories(Engine PRIVATE "lib/par_shapes")
+target_include_directories(Engine PRIVATE "External Libraries/par_shapes")
 
 # setup includes
-target_include_directories(Engine PUBLIC "src/")
+target_include_directories(Engine PUBLIC "Source/")
 
 # custom post-build event to copy the builtin assets to the runtime directory
 add_custom_command(TARGET Engine

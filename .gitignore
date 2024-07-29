@@ -1,0 +1,6 @@
+build/
+bin/
+bin-obj/
+*.sln
+*.vcxproj*
+.vs/
