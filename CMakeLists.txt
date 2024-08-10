@@ -4,8 +4,25 @@ include(FetchContent)
 
 # a cool little cmake script that will force the sources into visual studio groups.
 include (Scripts/CMake/vs_source_groups.cmake)
+# include get_wares
+include (Scripts/CMake/get_wares.cmake)
+
+# are we a standalone directory?
+string(COMPARE EQUAL "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}" ENGINE_STANDALONE)
+
+# are we compiling for the web?
+string(COMPARE EQUAL CMAKE_CXX_COMPILER_ID "Emscripten" PLATFORM_WEB)
+if (NOT ${PLATFORM_WEB})
+  set(PLATFORM_DESKTOP TRUE)
+endif()
 
 project(Engine)
+
+# configure dependencies
+wares_sync(
+  "dev-dependencies" ${ENGINE_STANDALONE}
+  "desktop-dependencies" {PLATFORM_DESKTOP}}
+)
 
 function(AddDep targetName depName pkgName libName headerOnly gitUrl gitTag)
   # we need the name of the variable set for the library source directory
@@ -97,11 +114,11 @@ target_link_libraries(Engine PUBLIC imgui)
 # FT_DISABLE_PNG:BOOL=OFF
 # // Disable use of system zlib and use internal zlib library instead.
 # FT_DISABLE_ZLIB:BOOL=OFF
-SET(FT_DISABLE_BROTLI ON CACHE INTERNAL "Disable support of compressed WOFF2 fonts." FORCE)
-SET(FT_DISABLE_BZIP2 ON CACHE INTERNAL "Disable support of bzip2 compressed fonts." FORCE)
-SET(FT_DISABLE_HARFBUZZ ON CACHE INTERNAL "Disable HarfBuzz (used for improving auto-hinting of OpenType fonts)." FORCE)
-SET(FT_DISABLE_PNG ON CACHE INTERNAL "Disable support of PNG compressed OpenType embedded bitmaps." FORCE)
-SET(FT_DISABLE_ZLIB ON CACHE INTERNAL "Disable use of system zlib and use internal zlib library instead." FORCE)
+set(FT_DISABLE_BROTLI ON CACHE INTERNAL "Disable support of compressed WOFF2 fonts." FORCE)
+set(FT_DISABLE_BZIP2 ON CACHE INTERNAL "Disable support of bzip2 compressed fonts." FORCE)
+set(FT_DISABLE_HARFBUZZ ON CACHE INTERNAL "Disable HarfBuzz (used for improving auto-hinting of OpenType fonts)." FORCE)
+set(FT_DISABLE_PNG ON CACHE INTERNAL "Disable support of PNG compressed OpenType embedded bitmaps." FORCE)
+set(FT_DISABLE_ZLIB ON CACHE INTERNAL "Disable use of system zlib and use internal zlib library instead." FORCE)
 AddDep(Engine FREETYPE Freetype freetype 0 https://gitlab.freedesktop.org/freetype/freetype.git 4e61303a3b0e6656c38dd9da9f70d18d7e30585b)
 
 if(TARGET Freetype::Freetype)
@@ -118,14 +135,8 @@ set(MSDF_ATLAS_BUILD_STANDALONE OFF CACHE INTERNAL "Build the msdf-atlas-gen sta
 set(MSDFGEN_FREETYPE_SUBDIRECTORY ON CACHE INTERNAL "Freetype has been included as a subdirectory" FORCE)
 AddDep(Engine MSDF_ATLAS_GEN msdf-atlas-gen msdf-atlas-gen 0 https://github.com/Chlumsky/msdf-atlas-gen.git 3cf874b39a2ea0acd316651cf10f5d13f75371fd)
 
-# if we are on replit then we are going to have to 
-# link libfmt as well
-#if(DEFINED ENV{REPL_ID})
-#  target_link_libraries(Engine PUBLIC fmt)
-#endif()
-
 # link glad (but not for the web)
-if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Emscripten")
+if(NOT ${PLATFORM_WEB})
 	target_link_libraries(Engine PRIVATE Glad)
 	target_include_directories(Engine PUBLIC "External Libraries/glad/include")
 endif()
@@ -136,16 +147,15 @@ target_include_directories(Engine PRIVATE "External Libraries/par_shapes")
 # setup includes
 target_include_directories(Engine PUBLIC "Source/")
 
-# custom post-build event to copy the builtin assets to the runtime directory
+# custom post-build event to copy the builtin assets to the runtime directory 
+# maybe move to the user's build script
 add_custom_command(TARGET Engine
   POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${Engine_SOURCE_DIR}/assets/builtin ${CMAKE_SOURCE_DIR}/assets/builtin
+  COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${Engine_SOURCE_DIR}/Assets/builtin ${CMAKE_SOURCE_DIR}/Assets/builtin
 )
 
 # Extra linux compiler options
 if( CMAKE_COMPILER_IS_GNUCC )
-    message(STATUS "Linux build detected: " ${CMAKE_CXX_COMPILER_ID})
-
     target_compile_options(Engine PRIVATE -Wall -Wextra)
     target_link_libraries(Engine PUBLIC GL)
 endif()

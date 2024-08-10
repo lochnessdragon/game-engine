@@ -4,6 +4,7 @@ local function setup_glfw(root_directory)
 	end
 
 	project "GLFW"
+	kind "StaticLib"
 
 	files {
 		glfw_file("src/internal.h"),

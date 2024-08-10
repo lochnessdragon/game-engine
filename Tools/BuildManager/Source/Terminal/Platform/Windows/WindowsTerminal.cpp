@@ -1,4 +1,4 @@
-#include "WindowsTerminalGuard.h"
+#include "WindowsTerminal.h"
 
 #include <iostream>
 
@@ -8,7 +8,18 @@
 #include <locale>
 #include <codecvt>
 
-Platform::Windows::WindowsTerminalGuard::WindowsTerminalGuard() {
+using namespace Platform::Windows;
+
+Platform::Windows::WindowsTerminal* Platform::Windows::WindowsTerminal::INSTANCE = nullptr;
+
+Platform::Windows::WindowsTerminal::WindowsTerminal() {
+	// check for singleton access
+	if (INSTANCE != nullptr) {
+		throw std::runtime_error("Programmer Error: An Instance of the Terminal class has already been constructed! Do not construct another!");
+	}
+
+	INSTANCE = this;
+
 	// enable UTF8 support (if not enabled already)
 	initialCinCodePage = GetConsoleCP();
 	if (initialCinCodePage == 0) { // call failed
@@ -54,14 +65,14 @@ Platform::Windows::WindowsTerminalGuard::WindowsTerminalGuard() {
 		throw std::runtime_error("Terminal Error: " + GetWindowsError());
 	}
 
-	DWORD requestedStdOutModes = ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN;
-	DWORD requestedStdInModes = ENABLE_VIRTUAL_TERMINAL_INPUT;
+	DWORD requestedStdOutModes = ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN;
+	DWORD requestedStdInModes = 0;// (ENABLE_VIRTUAL_TERMINAL_INPUT) & ~(ENABLE_VIRTUAL_TERMINAL_INPUT);
 
 	DWORD stdOutMode = currentStdOutMode | requestedStdOutModes;
 	if (!SetConsoleMode(stdOutHandle, stdOutMode))
 	{
 		// we failed to set both modes, try to step down mode gracefully.
-		requestedStdOutModes = ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+		requestedStdOutModes = ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 		stdOutMode = currentStdOutMode | requestedStdOutModes;
 		if (!SetConsoleMode(stdOutHandle, stdOutMode))
 		{
@@ -82,7 +93,7 @@ Platform::Windows::WindowsTerminalGuard::WindowsTerminalGuard() {
 	originalStdInMode = currentStdInMode;
 }
 
-Platform::Windows::WindowsTerminalGuard::~WindowsTerminalGuard() {
+Platform::Windows::WindowsTerminal::~WindowsTerminal() {
 	if (initialCinCodePage != 0) {
 		SetConsoleCP(initialCinCodePage);
 	}
@@ -97,6 +108,50 @@ Platform::Windows::WindowsTerminalGuard::~WindowsTerminalGuard() {
 
 	if (stdInHandle != INVALID_HANDLE_VALUE && originalStdInMode.has_value()) {
 		SetConsoleMode(stdInHandle, originalStdInMode.value());
+	}
+
+	// clear the singleton
+	if (INSTANCE == this) {
+		INSTANCE = nullptr;
+	}
+}
+
+// the flags representing "cooked" input mode
+const DWORD COOKED_INPUT_FLAGS = ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT;
+
+void WindowsTerminal::rawInput() {
+	// retrieve the current stdin mode
+	DWORD currentStdInMode = 0;
+
+	if (!GetConsoleMode(stdInHandle, &currentStdInMode)) {
+		throw std::runtime_error("Terminal Error: " + GetWindowsError());
+	}
+
+	DWORD stdInMode = (currentStdInMode | ENABLE_VIRTUAL_TERMINAL_INPUT) & ~COOKED_INPUT_FLAGS;
+
+	// set the new stdin mode
+	if (!SetConsoleMode(stdInHandle, stdInMode))
+	{
+		// Failed to set VT input mode, can't do anything here.
+		throw std::runtime_error("Terminal Error: " + GetWindowsError());
+	}
+}
+
+void WindowsTerminal::cookedInput() {
+	// retrieve the current stdin mode
+	DWORD currentStdInMode = 0;
+
+	if (!GetConsoleMode(stdInHandle, &currentStdInMode)) {
+		throw std::runtime_error("Terminal Error: " + GetWindowsError());
+	}
+
+	DWORD stdInMode = (currentStdInMode | COOKED_INPUT_FLAGS) & ~(ENABLE_VIRTUAL_TERMINAL_INPUT);
+
+	// set the new stdin mode
+	if (!SetConsoleMode(stdInHandle, stdInMode))
+	{
+		// Failed to set VT input mode, can't do anything here.
+		throw std::runtime_error("Terminal Error: " + GetWindowsError());
 	}
 }
 

@@ -10,4 +10,4 @@
 * Multiselect
 * Integer input
 * Password input
-* Autocomplemention
+* Auto-completion
